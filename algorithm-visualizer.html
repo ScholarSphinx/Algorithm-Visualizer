@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ALGO/CTRL — Algorithm Visualization Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a10;
+  --bg-panel:#0d131c;
+  --bg-panel-alt:#111925;
+  --border:#1c2b3a;
+  --border-bright:#2d4256;
+  --cyan:#4fd8ff;
+  --cyan-dim:#164b5e;
+  --violet:#b98bff;
+  --violet-dim:#3f3468;
+  --amber:#ffb454;
+  --amber-dim:#5f461f;
+  --green:#5eeba0;
+  --green-dim:#1f5a41;
+  --rose:#ff6b81;
+  --rose-dim:#5c2733;
+  --text:#dbe7f0;
+  --text-dim:#7a90a3;
+  --text-faint:#41556a;
+  --font-display:'Rajdhani', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; }
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight:500;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(79,216,255,0.025) 0px, rgba(79,216,255,0.025) 1px, transparent 1px, transparent 34px),
+    repeating-linear-gradient(90deg, rgba(79,216,255,0.025) 0px, rgba(79,216,255,0.025) 1px, transparent 1px, transparent 34px),
+    radial-gradient(circle at 12% 8%, rgba(185,139,255,0.07), transparent 40%),
+    radial-gradient(circle at 90% 92%, rgba(79,216,255,0.07), transparent 40%);
+  min-height:100vh;
+}
+.shell{ max-width:1360px; margin:0 auto; padding:20px 22px 34px; }
+
+/* ---------------- topbar ---------------- */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; flex-wrap:wrap;
+  padding-bottom:16px; margin-bottom:16px;
+  border-bottom:1px solid var(--border);
+}
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand-mark{
+  width:38px; height:38px; position:relative;
+  border:2px solid var(--cyan);
+  clip-path: polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);
+  background: linear-gradient(135deg, rgba(79,216,255,0.18), transparent 70%);
+  flex-shrink:0;
+}
+.brand-mark::before{
+  content:''; position:absolute; inset:7px;
+  border:1px solid var(--cyan-dim);
+}
+.brand-text h1{
+  font-size:21px; letter-spacing:0.16em; font-weight:700; text-transform:uppercase; color:var(--text);
+}
+.brand-text p{
+  font-size:10.5px; letter-spacing:0.1em; color:var(--text-dim); text-transform:uppercase; margin-top:2px;
+}
+.tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+.tab-btn{
+  font-family:var(--font-mono);
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  font-size:11px; letter-spacing:0.05em;
+  padding:9px 13px;
+  cursor:pointer;
+  position:relative;
+  transition:all .15s ease;
+  clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+}
+.tab-btn .ch{ color:var(--text-faint); margin-right:6px; }
+.tab-btn:hover{ color:var(--text); border-color:var(--border-bright); }
+.tab-btn.active{
+  color:var(--cyan); border-color:var(--cyan-dim);
+  background:linear-gradient(180deg, rgba(79,216,255,0.14), rgba(79,216,255,0.02));
+  box-shadow:0 0 14px rgba(79,216,255,0.15) inset, 0 0 10px rgba(79,216,255,0.12);
+}
+.tab-btn.active .ch{ color:var(--cyan); }
+.power{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.1em; color:var(--green);
+  display:flex; align-items:center; gap:8px;
+  border:1px solid var(--border); padding:8px 12px; background:var(--bg-panel);
+}
+.power-dot{
+  width:7px; height:7px; border-radius:50%; background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:blink 1.8s ease-in-out infinite;
+}
+@keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+/* ---------------- console layout ---------------- */
+.console{
+  display:grid;
+  grid-template-columns: 250px 1fr;
+  gap:16px;
+  align-items:start;
+}
+.sidebar{
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  padding:16px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.sidebar-title{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.15em; color:var(--text-faint);
+  text-transform:uppercase; padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.ctrl-group{ display:flex; flex-direction:column; gap:6px; }
+.ctrl-group label{
+  font-size:11px; letter-spacing:0.1em; color:var(--text-dim); text-transform:uppercase;
+  display:flex; justify-content:space-between;
+}
+.ctrl-group label .val{ font-family:var(--font-mono); color:var(--cyan); }
+select.hud-select{
+  font-family:var(--font-mono); background:var(--bg-panel-alt); color:var(--text);
+  border:1px solid var(--border-bright); padding:8px 10px; font-size:12px;
+  appearance:none; cursor:pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--cyan) 50%), linear-gradient(135deg, var(--cyan) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px; background-repeat:no-repeat;
+}
+select.hud-select:focus{ outline:none; border-color:var(--cyan); }
+input[type=range].hud-slider{
+  -webkit-appearance:none; width:100%; height:4px; background:var(--border-bright); outline:none; cursor:pointer;
+}
+input[type=range].hud-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; width:14px; height:14px; background:var(--cyan);
+  clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%);
+  box-shadow:0 0 8px rgba(79,216,255,0.7); cursor:pointer;
+}
+input[type=range].hud-slider::-moz-range-thumb{
+  width:14px; height:14px; background:var(--cyan); border:none;
+  clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); box-shadow:0 0 8px rgba(79,216,255,0.7); cursor:pointer;
+}
+input[type=text].hud-input, input[type=number].hud-input{
+  font-family:var(--font-mono); background:var(--bg-panel-alt); color:var(--text);
+  border:1px solid var(--border-bright); padding:8px 10px; font-size:12px; width:100%;
+}
+input.hud-input:focus{ outline:none; border-color:var(--cyan); }
+.btn{
+  font-family:var(--font-mono); background:var(--bg-panel-alt); color:var(--text-dim);
+  border:1px solid var(--border-bright); padding:9px 10px; font-size:11px; letter-spacing:0.06em;
+  cursor:pointer; text-align:center; text-transform:uppercase; transition:all .15s ease;
+  clip-path: polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+}
+.btn:hover{ color:var(--text); border-color:var(--cyan-dim); background:rgba(79,216,255,0.06); }
+.btn:active{ transform:translateY(1px); }
+.btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.btn-primary{ color:var(--bg); background:var(--cyan); border-color:var(--cyan); font-weight:700; }
+.btn-primary:hover{ background:#7ee3ff; color:var(--bg); }
+.btn-row{ display:flex; gap:6px; }
+.btn-row .btn{ flex:1; }
+.run-group{ display:flex; flex-direction:column; gap:6px; padding-top:12px; border-top:1px solid var(--border); }
+.legend{ display:flex; flex-direction:column; gap:6px; margin-top:2px; }
+.legend .litem{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); }
+.legend .sw{ width:10px; height:10px; flex-shrink:0; }
+.hint{ font-size:10.5px; color:var(--text-faint); line-height:1.5; }
+
+/* ---------------- viewport frame ---------------- */
+.viewport-frame{
+  position:relative; background:var(--bg-panel);
+  border:1px solid var(--border);
+  height:660px;
+  min-height:660px;
+  overflow:hidden;
+}
+.bracket{ position:absolute; width:22px; height:22px; border-color:var(--cyan); z-index:3; opacity:0.85; pointer-events:none; }
+.bracket.tl{ top:8px; left:8px; border-top:2px solid; border-left:2px solid; }
+.bracket.tr{ top:8px; right:8px; border-top:2px solid; border-right:2px solid; }
+.bracket.bl{ bottom:8px; left:8px; border-bottom:2px solid; border-left:2px solid; }
+.bracket.br{ bottom:8px; right:8px; border-bottom:2px solid; border-right:2px solid; }
+.scan{
+  position:absolute; left:0; right:0; height:2px; top:0;
+  background:linear-gradient(90deg, transparent, rgba(79,216,255,0.55), transparent);
+  animation: scan-move 5s linear infinite; pointer-events:none; z-index:2;
+}
+@keyframes scan-move{ 0%{ top:0; opacity:0; } 5%{ opacity:1; } 95%{ opacity:1; } 100%{ top:100%; opacity:0; } }
+.viewport{ position:relative; height:100%; min-height:500px; padding:26px; z-index:1; display:flex; flex-direction:column; }
+.viewport-label{
+  position:absolute; top:14px; left:34px; font-family:var(--font-mono); font-size:10px;
+  letter-spacing:0.15em; color:var(--text-faint); text-transform:uppercase; z-index:2;
+}
+
+/* ---------------- telemetry ---------------- */
+.telemetry{
+  margin-top:16px; background:var(--bg-panel); border:1px solid var(--border);
+  padding:12px 18px; display:flex; gap:28px; flex-wrap:wrap;
+}
+.tstat{ display:flex; flex-direction:column; gap:3px; }
+.tstat .tlabel{ font-size:10px; letter-spacing:0.12em; color:var(--text-faint); text-transform:uppercase; }
+.tstat .tval{ font-family:var(--font-mono); font-size:16px; color:var(--cyan); }
+.tstat .tval.small{ font-size:12px; color:var(--text); }
+
+@media (max-width: 880px){
+  .console{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <h1>Algo / Ctrl</h1>
+        <p>Algorithm Visualization Console</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn" data-mod="sort"><span class="ch">CH.01</span>SORT</button>
+      <button class="tab-btn" data-mod="path"><span class="ch">CH.02</span>PATHFIND</button>
+      <button class="tab-btn" data-mod="tree"><span class="ch">CH.03</span>TREES</button>
+      <button class="tab-btn" data-mod="graph"><span class="ch">CH.04</span>GRAPHS</button>
+      <button class="tab-btn" data-mod="zip"><span class="ch">CH.05</span>COMPRESS</button>
+      <button class="tab-btn" data-mod="crypto"><span class="ch">CH.06</span>CRYPTO</button>
+    </nav>
+    <div class="power"><span class="power-dot"></span>PWR ON</div>
+  </header>
+
+  <main class="console">
+    <aside class="sidebar" id="sidebar"></aside>
+    <section class="viewport-frame">
+      <div class="bracket tl"></div><div class="bracket tr"></div><div class="bracket bl"></div><div class="bracket br"></div>
+      <div class="scan"></div>
+      <div class="viewport-label" id="viewportLabel">SORT.MODULE</div>
+      <div class="viewport" id="viewport"></div>
+    </section>
+  </main>
+
+  <footer class="telemetry" id="telemetry"></footer>
+
+</div>
+
+<script>
+/* =========================================================
+   ALGO/CTRL — shared engine
+   ========================================================= */
+const COLOR = {
+  cyan:'#4fd8ff', cyanDim:'#164b5e', violet:'#b98bff', violetDim:'#3f3468',
+  amber:'#ffb454', amberDim:'#5f461f', green:'#5eeba0', greenDim:'#1f5a41',
+  rose:'#ff6b81', roseDim:'#5c2733', textDim:'#7a90a3'
+};
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function rand(min,max){ return Math.random()*(max-min)+min; }
+function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+function mapSpeed(speed, maxDelay, minDelay){
+  const t = (speed-1)/99;
+  return Math.round(maxDelay - t*(maxDelay-minDelay));
+}
+function el(tag, cls, html){
+  const e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+/* Generic step-through runner for generator-based algorithms */
+class Runner{
+  constructor(genFactory, onEvent, onDone){
+    this.genFactory = genFactory;
+    this.onEvent = onEvent;
+    this.onDone = onDone;
+    this.gen = null;
+    this.timer = null;
+    this.playing = false;
+    this.finished = false;
+  }
+  ensure(){ if(!this.gen){ this.gen = this.genFactory(); this.finished = false; } }
+  step(){
+    this.ensure();
+    const r = this.gen.next();
+    if(r.done){
+      this.playing = false;
+      this.finished = true;
+      if(this.onDone) this.onDone();
+      return false;
+    }
+    this.onEvent(r.value);
+    return true;
+  }
+  play(delayFn){
+    this.ensure();
+    if(this.finished) return;
+    this.playing = true;
+    const loop = () => {
+      if(!this.playing) return;
+      const cont = this.step();
+      if(cont && this.playing){ this.timer = setTimeout(loop, delayFn()); }
+    };
+    loop();
+  }
+  pause(){ this.playing = false; clearTimeout(this.timer); }
+  hardReset(){ this.pause(); this.gen = null; this.finished = false; }
+}
+
+/* Elapsed-time ticker shared by modules */
+function makeClock(onTick){
+  let start=0, elapsed=0, timer=null, running=false;
+  return {
+    start(){ start = performance.now() - elapsed; running = true;
+      timer = setInterval(()=>{ elapsed = performance.now()-start; onTick(elapsed); }, 97); },
+    pause(){ running=false; clearInterval(timer); },
+    reset(){ running=false; clearInterval(timer); elapsed=0; onTick(0); },
+    isRunning(){ return running; }
+  };
+}
+function fmtMs(ms){
+  const s = ms/1000;
+  return s.toFixed(1)+'s';
+}
+
+/* Shared run-controls block appended to every module sidebar */
+function runControlsHTML(speedDefault, newDataLabel, newDataId){
+  return `
+    <div class="ctrl-group">
+      <button class="btn btn-primary" id="${newDataId}">${newDataLabel}</button>
+    </div>
+    <div class="run-group">
+      <div class="btn-row">
+        <button class="btn" id="btnRun">▶ RUN</button>
+        <button class="btn" id="btnPause">⏸ PAUSE</button>
+      </div>
+      <button class="btn" id="btnReset">⟲ RESET</button>
+    </div>
+    <div class="ctrl-group">
+      <label>SPEED <span class="val" id="speedVal">${speedDefault}</span></label>
+      <input type="range" class="hud-slider" id="speedSlider" min="1" max="100" value="${speedDefault}">
+    </div>`;
+}
+function bindRunControls(mod){
+  document.getElementById('btnRun').onclick = () => mod.run();
+  document.getElementById('btnPause').onclick = () => mod.pause();
+  document.getElementById('btnReset').onclick = () => mod.reset();
+  const sp = document.getElementById('speedSlider');
+  sp.oninput = () => { mod.speed = +sp.value; document.getElementById('speedVal').textContent = sp.value; };
+}
+
+/* =========================================================
+   MODULE 1 — SORTING
+   ========================================================= */
+function* bubbleSort(a){
+  const n=a.length;
+  for(let i=0;i<n-1;i++){
+    let swapped=false;
+    for(let j=0;j<n-1-i;j++){
+      yield {type:'compare', i:j, j:j+1};
+      if(a[j]>a[j+1]){
+        [a[j],a[j+1]]=[a[j+1],a[j]];
+        yield {type:'swap', i:j, j:j+1};
+        swapped=true;
+      }
+    }
+    yield {type:'sorted', i:n-1-i};
+    if(!swapped){ for(let k=0;k<n-1-i;k++) yield {type:'sorted', i:k}; break; }
+  }
+  yield {type:'sorted', i:0};
+}
+function* selectionSort(a){
+  const n=a.length;
+  for(let i=0;i<n;i++){
+    let min=i;
+    for(let j=i+1;j<n;j++){
+      yield {type:'compare', i:min, j};
+      if(a[j]<a[min]) min=j;
+    }
+    if(min!==i){ [a[i],a[min]]=[a[min],a[i]]; yield {type:'swap', i, j:min}; }
+    yield {type:'sorted', i};
+  }
+}
+function* insertionSort(a){
+  const n=a.length;
+  yield {type:'sorted', i:0};
+  for(let i=1;i<n;i++){
+    let j=i;
+    while(j>0){
+      yield {type:'compare', i:j-1, j};
+      if(a[j-1]>a[j]){ [a[j-1],a[j]]=[a[j],a[j-1]]; yield {type:'swap', i:j-1, j}; j--; }
+      else break;
+    }
+    for(let k=0;k<=i;k++) yield {type:'sorted', i:k};
+  }
+}
+function* mergeSort(a){
+  function* ms(lo,hi){
+    if(hi-lo<=1) return;
+    const mid=(lo+hi)>>1;
+    yield* ms(lo,mid);
+    yield* ms(mid,hi);
+    const merged=[]; let i=lo,j=mid;
+    while(i<mid && j<hi){
+      yield {type:'compare', i, j};
+      if(a[i]<=a[j]) merged.push(a[i++]); else merged.push(a[j++]);
+    }
+    while(i<mid) merged.push(a[i++]);
+    while(j<hi) merged.push(a[j++]);
+    for(let k=0;k<merged.length;k++){ a[lo+k]=merged[k]; yield {type:'set', i:lo+k, value:merged[k]}; }
+    yield {type:'sortedRange', from:lo, to:hi};
+  }
+  yield* ms(0,a.length);
+}
+function* quickSort(a){
+  function* qs(lo,hi){
+    if(lo>hi) return;
+    if(lo===hi){ yield {type:'sorted', i:lo}; return; }
+    const pivot=a[hi]; let i=lo;
+    for(let j=lo;j<hi;j++){
+      yield {type:'compare', i:j, j:hi};
+      if(a[j]<pivot){ if(i!==j){ [a[i],a[j]]=[a[j],a[i]]; yield {type:'swap', i, j}; } i++; }
+    }
+    [a[i],a[hi]]=[a[hi],a[i]]; yield {type:'swap', i, j:hi};
+    yield {type:'sorted', i};
+    yield* qs(lo,i-1);
+    yield* qs(i+1,hi);
+  }
+  yield* qs(0,a.length-1);
+}
+const SORT_ALGOS = { bubble:bubbleSort, selection:selectionSort, insertion:insertionSort, merge:mergeSort, quick:quickSort };
+const SORT_LABELS = { bubble:'Bubble Sort', selection:'Selection Sort', insertion:'Insertion Sort', merge:'Merge Sort', quick:'Quick Sort' };
+
+const Sort = {
+  speed:65, n:50, original:[], arr:[], sortedSet:null, runner:null, clock:null,
+  comparisons:0, swaps:0, active:[],
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'SORT.MODULE';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Sort Configuration</div>
+      <div class="ctrl-group">
+        <label>Algorithm</label>
+        <select class="hud-select" id="sortAlgo">
+          ${Object.entries(SORT_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Array Size <span class="val" id="sizeVal">${this.n}</span></label>
+        <input type="range" class="hud-slider" id="sizeSlider" min="10" max="90" value="${this.n}">
+      </div>
+      ${runControlsHTML(this.speed, '⟳ SHUFFLE', 'btnShuffle')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.cyan}"></span>Idle</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.amber}"></span>Comparing</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.rose}"></span>Swapping</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.green}"></span>Sorted</div>
+        </div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<div class="bar-chart" id="barChart" style="flex:1;display:flex;align-items:flex-end;gap:2px;"></div>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Algorithm</div><div class="tval small" id="tAlgo">Bubble Sort</div></div>
+      <div class="tstat"><div class="tlabel">Comparisons</div><div class="tval" id="tCompare">0</div></div>
+      <div class="tstat"><div class="tlabel">Swaps / Writes</div><div class="tval" id="tSwap">0</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('btnShuffle').onclick = () => this.shuffle();
+    document.getElementById('sortAlgo').onchange = () => { this.reset(); this.updateAlgoLabel(); };
+    const sizeSlider = document.getElementById('sizeSlider');
+    sizeSlider.oninput = () => {
+      this.n = +sizeSlider.value;
+      document.getElementById('sizeVal').textContent = this.n;
+      this.shuffle();
+    };
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.shuffle();
+    this.updateAlgoLabel();
+  },
+  updateAlgoLabel(){
+    document.getElementById('tAlgo').textContent = SORT_LABELS[document.getElementById('sortAlgo').value];
+  },
+  shuffle(){
+    this.original = Array.from({length:this.n}, () => randInt(5,100));
+    this.buildBars();
+    this.reset();
+  },
+  buildBars(){
+    const chart = document.getElementById('barChart');
+    chart.innerHTML = '';
+    this.original.forEach(v => {
+      const bar = el('div','sort-bar');
+      bar.style.cssText = `flex:1;min-width:2px;height:${v}%;background:${COLOR.cyan};transition:background .12s ease;`;
+      chart.appendChild(bar);
+    });
+  },
+  redraw(){
+    const chart = document.getElementById('barChart');
+    [...chart.children].forEach((bar,i) => {
+      bar.style.height = this.arr[i]+'%';
+      let color = COLOR.cyan;
+      if(this.sortedSet.has(i)) color = COLOR.green;
+      else if(this.active.includes(i)) color = this.activeType==='swap' ? COLOR.rose : COLOR.amber;
+      bar.style.background = color;
+    });
+  },
+  handleEvent(ev){
+    if(ev.type==='compare'){ this.comparisons++; this.active=[ev.i,ev.j]; this.activeType='compare'; }
+    else if(ev.type==='swap'){ this.swaps++; this.active=[ev.i,ev.j]; this.activeType='swap'; }
+    else if(ev.type==='set'){ this.swaps++; this.active=[ev.i]; this.activeType='swap'; }
+    else if(ev.type==='sorted'){ this.sortedSet.add(ev.i); this.active=[]; }
+    else if(ev.type==='sortedRange'){ for(let k=ev.from;k<ev.to;k++) this.sortedSet.add(k); this.active=[]; }
+    document.getElementById('tCompare').textContent = this.comparisons;
+    document.getElementById('tSwap').textContent = this.swaps;
+    this.redraw();
+  },
+  run(){
+    if(!this.runner){
+      this.runner = new Runner(
+        () => SORT_ALGOS[document.getElementById('sortAlgo').value](this.arr),
+        (ev)=>this.handleEvent(ev),
+        () => { document.getElementById('tStatus').textContent = 'Sorted'; this.clock.pause(); for(let i=0;i<this.arr.length;i++) this.sortedSet.add(i); this.redraw(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    document.getElementById('sortAlgo').disabled = true;
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 260, 4));
+  },
+  pause(){
+    if(this.runner) this.runner.pause();
+    this.clock.pause();
+    document.getElementById('tStatus').textContent = 'Paused';
+  },
+  reset(){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    this.arr = [...this.original];
+    this.sortedSet = new Set();
+    this.active = [];
+    this.comparisons = 0; this.swaps = 0;
+    document.getElementById('tCompare').textContent = 0;
+    document.getElementById('tSwap').textContent = 0;
+    document.getElementById('tStatus').textContent = 'Idle';
+    document.getElementById('sortAlgo').disabled = false;
+    if(this.clock) this.clock.reset();
+    this.redraw();
+  },
+  destroy(){ if(this.runner) this.runner.hardReset(); if(this.clock) this.clock.pause(); }
+};
+
+/* =========================================================
+   MODULE 2 — PATHFINDING
+   ========================================================= */
+const GRID_COLS = 26, GRID_ROWS = 12;
+
+function gridNeighbors(grid, node){
+  const {r,c} = node;
+  const out = [];
+  if(r>0) out.push(grid[r-1][c]);
+  if(r<GRID_ROWS-1) out.push(grid[r+1][c]);
+  if(c>0) out.push(grid[r][c-1]);
+  if(c<GRID_COLS-1) out.push(grid[r][c+1]);
+  return out.filter(n => !n.isWall);
+}
+function reconstructPath(node){
+  const path=[]; let cur=node;
+  while(cur){ path.unshift(cur); cur=cur.previous; }
+  return path;
+}
+function* bfsPath(grid,start,end){
+  const queue=[start]; start.visited=true;
+  while(queue.length){
+    const node=queue.shift();
+    yield {type:'visit', node};
+    if(node===end){ yield {type:'path', path:reconstructPath(end)}; return; }
+    for(const nb of gridNeighbors(grid,node)){
+      if(!nb.visited){ nb.visited=true; nb.previous=node; queue.push(nb); }
+    }
+  }
+  yield {type:'nopath'};
+}
+function* dfsPath(grid,start,end){
+  const stack=[start]; start.visited=true;
+  while(stack.length){
+    const node=stack.pop();
+    if(node.done) continue;
+    node.done=true;
+    yield {type:'visit', node};
+    if(node===end){ yield {type:'path', path:reconstructPath(end)}; return; }
+    for(const nb of gridNeighbors(grid,node)){
+      if(!nb.visited){ nb.visited=true; nb.previous=node; stack.push(nb); }
+    }
+  }
+  yield {type:'nopath'};
+}
+function* dijkstraPath(grid,start,end){
+  const all=[]; for(const row of grid) for(const c of row){ c.dist=Infinity; all.push(c); }
+  start.dist=0;
+  const unvisited=[...all];
+  while(unvisited.length){
+    unvisited.sort((a,b)=>a.dist-b.dist);
+    const node=unvisited.shift();
+    if(node.dist===Infinity) break;
+    if(node.isWall || node.visited) continue;
+    node.visited=true;
+    yield {type:'visit', node};
+    if(node===end){ yield {type:'path', path:reconstructPath(end)}; return; }
+    for(const nb of gridNeighbors(grid,node)){
+      if(nb.visited) continue;
+      const alt = node.dist + nb.weight;
+      if(alt < nb.dist){ nb.dist=alt; nb.previous=node; }
+    }
+  }
+  yield {type:'nopath'};
+}
+function* aStarPath(grid,start,end){
+  const h = (n) => Math.abs(n.r-end.r)+Math.abs(n.c-end.c);
+  const all=[]; for(const row of grid) for(const c of row){ c.g=Infinity; c.f=Infinity; all.push(c); }
+  start.g=0; start.f=h(start);
+  const open=[start];
+  while(open.length){
+    open.sort((a,b)=>a.f-b.f);
+    const node=open.shift();
+    if(node.visited) continue;
+    node.visited=true;
+    yield {type:'visit', node};
+    if(node===end){ yield {type:'path', path:reconstructPath(end)}; return; }
+    for(const nb of gridNeighbors(grid,node)){
+      if(nb.visited) continue;
+      const tentative = node.g + nb.weight;
+      if(tentative < nb.g){ nb.g=tentative; nb.f=tentative+h(nb); nb.previous=node; if(!open.includes(nb)) open.push(nb); }
+    }
+  }
+  yield {type:'nopath'};
+}
+const PATH_ALGOS = { bfs:bfsPath, dfs:dfsPath, dijkstra:dijkstraPath, astar:aStarPath };
+const PATH_LABELS = { bfs:'Breadth-First Search', dfs:'Depth-First Search', dijkstra:"Dijkstra's Algorithm", astar:'A* Search' };
+
+const Pathfind = {
+  speed:80, grid:null, start:null, end:null, runner:null, clock:null,
+  isDrawing:false, drawMode:'add', visitedCount:0, mouseUpHandler:null,
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'PATHFIND.MODULE';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Pathfinding Configuration</div>
+      <div class="ctrl-group">
+        <label>Algorithm</label>
+        <select class="hud-select" id="pathAlgo">
+          ${Object.entries(PATH_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Draw Mode</label>
+        <select class="hud-select" id="placeMode">
+          <option value="wall">Wall</option>
+          <option value="hazard">Hazard Terrain</option>
+          <option value="start">Move Start Node</option>
+          <option value="end">Move End Node</option>
+          <option value="erase">Erase Cell</option>
+        </select>
+      </div>
+      <div class="ctrl-group" id="hazardCostGroup">
+        <label>Hazard Cost <span class="val" id="hazardCostVal">5</span></label>
+        <input type="range" class="hud-slider" id="hazardCost" min="2" max="9" value="5">
+      </div>
+      <div class="ctrl-group">
+        <button class="btn" id="btnWalls">▦ RANDOM WALLS</button>
+      </div>
+      <div class="ctrl-group">
+        <button class="btn" id="btnHazard">◈ RANDOM HAZARDS</button>
+      </div>
+      <div class="ctrl-group">
+        <button class="btn" id="btnClearWalls">✕ CLEAR GRID</button>
+      </div>
+      ${runControlsHTML(this.speed, '⟳ NEW ENDPOINTS', 'btnEndpoints')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.green}"></span>Start</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.rose}"></span>End</div>
+          <div class="litem"><span class="sw" style="background:#26313f"></span>Wall</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.amberDim}"></span>Hazard (custom cost)</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.cyanDim}"></span>Visited</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.violet}"></span>Path</div>
+        </div>
+        <div class="hint">Pick a Draw Mode above, then click + drag on the grid. "Wall" paints/erases walls as you drag. "Hazard Terrain" paints cells at the current Hazard Cost — click an existing hazard again to overwrite its cost with the slider's current value. "Move Start/End Node" relocates that node to wherever you click next. "Erase Cell" clears walls/hazards back to open ground.</div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<div id="pathGrid" style="flex:1;display:grid;grid-template-columns:repeat(${GRID_COLS},1fr);grid-template-rows:repeat(${GRID_ROWS},1fr);gap:2px;"></div>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Algorithm</div><div class="tval small" id="tAlgo">BFS</div></div>
+      <div class="tstat"><div class="tlabel">Cells Visited</div><div class="tval" id="tVisited">0</div></div>
+      <div class="tstat"><div class="tlabel">Path Length</div><div class="tval" id="tPathLen">—</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('btnWalls').onclick = () => this.randomWalls();
+    document.getElementById('btnHazard').onclick = () => this.randomHazards();
+    document.getElementById('btnClearWalls').onclick = () => this.buildGrid(true);
+    document.getElementById('btnEndpoints').onclick = () => this.newEndpoints();
+    document.getElementById('pathAlgo').onchange = () => { this.reset(); this.updateAlgoLabel(); };
+    document.getElementById('hazardCost').oninput = (e) => { document.getElementById('hazardCostVal').textContent = e.target.value; };
+
+    this.mouseUpHandler = () => { this.isDrawing = false; };
+    window.addEventListener('mouseup', this.mouseUpHandler);
+
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.buildGrid(true);
+    this.updateAlgoLabel();
+  },
+  updateAlgoLabel(){ document.getElementById('tAlgo').textContent = PATH_LABELS[document.getElementById('pathAlgo').value]; },
+  buildGrid(freshEndpoints){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    const container = document.getElementById('pathGrid');
+    container.innerHTML = '';
+    this.grid = [];
+    const sr = Math.floor(GRID_ROWS/2), sc = 2, er = Math.floor(GRID_ROWS/2), ec = GRID_COLS-3;
+    for(let r=0;r<GRID_ROWS;r++){
+      const row=[];
+      for(let c=0;c<GRID_COLS;c++){
+        const cell = { r,c, isWall:false, weight:1, visited:false, previous:null, dist:Infinity, g:Infinity, f:Infinity, done:false };
+        const cellEl = el('div','path-cell');
+        cellEl.style.cssText = 'background:#141c27;border:1px solid #1c2b3a;cursor:pointer;transition:background .18s ease;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;color:#2a1c08;user-select:none;';
+        cellEl.addEventListener('mousedown', (e)=>{ e.preventDefault(); this.onCellDown(cell); });
+        cellEl.addEventListener('mouseenter', ()=> this.onCellEnter(cell));
+        cell.el = cellEl;
+        container.appendChild(cellEl);
+        row.push(cell);
+      }
+      this.grid.push(row);
+    }
+    if(freshEndpoints || !this.start){
+      this.start = this.grid[sr][sc];
+      this.end = this.grid[er][ec];
+    } else {
+      this.start = this.grid[this.start.r][this.start.c];
+      this.end = this.grid[this.end.r][this.end.c];
+    }
+    this.paintEndpoints();
+    this.visitedCount = 0;
+    this.reset();
+  },
+  paintEndpoints(){
+    this.start.el.style.background = COLOR.green;
+    this.start.el.style.boxShadow = `0 0 8px ${COLOR.green}`;
+    this.end.el.style.background = COLOR.rose;
+    this.end.el.style.boxShadow = `0 0 8px ${COLOR.rose}`;
+  },
+  onCellDown(cell){
+    const mode = document.getElementById('placeMode').value;
+    if(mode==='start'){ this.setStart(cell); return; }
+    if(mode==='end'){ this.setEnd(cell); return; }
+    if(cell===this.start || cell===this.end) return;
+    this.isDrawing = true;
+    if(mode==='erase'){
+      this.drawMode = 'erase';
+      this.setWall(cell, false);
+    } else if(mode==='hazard'){
+      this.drawMode = 'hazard';
+      this.setHazard(cell, +document.getElementById('hazardCost').value);
+    } else {
+      this.drawMode = cell.isWall ? 'remove' : 'add';
+      this.setWall(cell, this.drawMode==='add');
+    }
+  },
+  onCellEnter(cell){
+    if(!this.isDrawing) return;
+    const mode = document.getElementById('placeMode').value;
+    if(mode==='start' || mode==='end') return;
+    if(cell===this.start || cell===this.end) return;
+    if(mode==='erase'){ this.setWall(cell, false); }
+    else if(mode==='hazard'){ this.setHazard(cell, +document.getElementById('hazardCost').value); }
+    else { this.setWall(cell, this.drawMode==='add'); }
+  },
+  setWall(cell, isWall){
+    cell.isWall = isWall;
+    cell.weight = 1;
+    cell.el.textContent = '';
+    cell.el.style.background = isWall ? '#26313f' : '#141c27';
+    cell.el.style.boxShadow = 'none';
+  },
+  setHazard(cell, cost){
+    cell.isWall = false;
+    cell.weight = cost;
+    cell.el.textContent = cost;
+    cell.el.style.background = COLOR.amberDim;
+    cell.el.style.boxShadow = 'none';
+  },
+  setStart(cell){
+    if(cell.isWall || cell===this.end) return;
+    this.start = cell;
+    this.reset();
+  },
+  setEnd(cell){
+    if(cell.isWall || cell===this.start) return;
+    this.end = cell;
+    this.reset();
+  },
+  randomWalls(){
+    for(const row of this.grid) for(const c of row){
+      if(c===this.start || c===this.end) continue;
+      const wall = Math.random() < 0.24;
+      this.setWall(c, wall);
+    }
+    this.reset();
+  },
+  randomHazards(){
+    const cost = +document.getElementById('hazardCost').value;
+    for(const row of this.grid) for(const c of row){
+      if(c===this.start || c===this.end || c.isWall) continue;
+      if(Math.random() < 0.14) this.setHazard(c, cost);
+    }
+    this.reset();
+  },
+  newEndpoints(){
+    const cells = this.grid.flat().filter(c => !c.isWall);
+    this.start = cells[randInt(0,cells.length-1)];
+    let e; do { e = cells[randInt(0,cells.length-1)]; } while(e===this.start);
+    this.end = e;
+    this.buildGrid(false);
+  },
+  handleEvent(ev){
+    if(ev.type==='visit'){
+      this.visitedCount++;
+      if(ev.node!==this.start && ev.node!==this.end){
+        ev.node.el.style.background = COLOR.cyanDim;
+      }
+      document.getElementById('tVisited').textContent = this.visitedCount;
+    } else if(ev.type==='path'){
+      ev.path.forEach((node,i) => {
+        if(node===this.start || node===this.end) return;
+        node.el.style.transitionDelay = (i*22)+'ms';
+        node.el.style.background = COLOR.violet;
+        node.el.style.boxShadow = `0 0 6px ${COLOR.violet}`;
+      });
+      document.getElementById('tPathLen').textContent = ev.path.length;
+      document.getElementById('tStatus').textContent = 'Path Found';
+      this.clock.pause();
+    } else if(ev.type==='nopath'){
+      document.getElementById('tStatus').textContent = 'No Path';
+      this.clock.pause();
+    }
+  },
+  run(){
+    if(!this.runner){
+      this.runner = new Runner(
+        () => PATH_ALGOS[document.getElementById('pathAlgo').value](this.grid, this.start, this.end),
+        (ev)=>this.handleEvent(ev),
+        () => { if(document.getElementById('tStatus').textContent==='Running') document.getElementById('tStatus').textContent='Done'; this.clock.pause(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    document.getElementById('pathAlgo').disabled = true;
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 140, 2));
+  },
+  pause(){ if(this.runner) this.runner.pause(); this.clock.pause(); document.getElementById('tStatus').textContent='Paused'; },
+  reset(){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    for(const row of this.grid) for(const c of row){
+      c.visited=false; c.previous=null; c.dist=Infinity; c.g=Infinity; c.f=Infinity; c.done=false;
+      if(c===this.start || c===this.end) continue;
+      c.el.style.transitionDelay = '0ms';
+      c.el.style.boxShadow = 'none';
+      c.el.style.background = c.isWall ? '#26313f' : (c.weight>1 ? COLOR.amberDim : '#141c27');
+      c.el.textContent = (!c.isWall && c.weight>1) ? c.weight : '';
+    }
+    this.paintEndpoints();
+    this.visitedCount = 0;
+    document.getElementById('tVisited').textContent = 0;
+    document.getElementById('tPathLen').textContent = '—';
+    document.getElementById('tStatus').textContent = 'Idle';
+    document.getElementById('pathAlgo').disabled = false;
+    if(this.clock) this.clock.reset();
+  },
+  destroy(){
+    if(this.runner) this.runner.hardReset();
+    if(this.clock) this.clock.pause();
+    if(this.mouseUpHandler) window.removeEventListener('mouseup', this.mouseUpHandler);
+  }
+};
+
+/* =========================================================
+   MODULE 3 — TREES (Binary Search Tree)
+   ========================================================= */
+function svgEl(tag, attrs){
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+function* bstInsertGen(root, value, makeNode){
+  let node = root.current;
+  if(!node){ root.current = makeNode(value); yield {type:'insert', node:root.current}; return root.current; }
+  let cur = node;
+  while(true){
+    yield {type:'visit', node:cur};
+    if(value < cur.value){
+      if(!cur.left){ cur.left = makeNode(value); yield {type:'insert', node:cur.left}; return root.current; }
+      cur = cur.left;
+    } else {
+      if(!cur.right){ cur.right = makeNode(value); yield {type:'insert', node:cur.right}; return root.current; }
+      cur = cur.right;
+    }
+  }
+}
+function* inorderGen(node){ if(!node) return; yield* inorderGen(node.left); yield {type:'visit', node}; yield* inorderGen(node.right); }
+function* preorderGen(node){ if(!node) return; yield {type:'visit', node}; yield* preorderGen(node.left); yield* preorderGen(node.right); }
+function* postorderGen(node){ if(!node) return; yield* postorderGen(node.left); yield* postorderGen(node.right); yield {type:'visit', node}; }
+function* levelorderGen(root){
+  if(!root) return;
+  const q=[root];
+  while(q.length){ const n=q.shift(); yield {type:'visit', node:n}; if(n.left) q.push(n.left); if(n.right) q.push(n.right); }
+}
+const TRAVERSAL_GENS = { inorder:inorderGen, preorder:preorderGen, postorder:postorderGen, levelorder:levelorderGen };
+const TRAVERSAL_LABELS = { inorder:'In-Order', preorder:'Pre-Order', postorder:'Post-Order', levelorder:'Level-Order' };
+
+const Trees = {
+  speed:55, root:null, nodeCount:0, runner:null, clock:null, sequence:[], mode:'insert',
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'TREE.MODULE // BINARY SEARCH TREE';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Tree Configuration</div>
+      <div class="ctrl-group">
+        <label>Insert Value</label>
+        <div class="btn-row">
+          <input type="number" class="hud-input" id="insertVal" min="1" max="999" placeholder="1-999">
+          <button class="btn" id="btnInsertVal" style="flex:0 0 60px;">ADD</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <button class="btn" id="btnRandomInsert">＋ INSERT RANDOM</button>
+      </div>
+      <div class="ctrl-group">
+        <label>Traversal</label>
+        <select class="hud-select" id="traversalAlgo">
+          ${Object.entries(TRAVERSAL_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      ${runControlsHTML(this.speed, '✕ CLEAR TREE', 'btnClearTree')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.cyan}"></span>Node</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.amber}"></span>Visiting</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.green}"></span>Visited</div>
+        </div>
+        <div class="hint">RUN plays the selected traversal over the current tree.<br><br><b>Placement:</b> an in-order walk (left → node → right) visits every node exactly once in left-to-right order; each node gets the next index <code>i</code> from that walk and is placed at x = <code>60 + i·(780/(count-1))</code>, spreading nodes evenly across the canvas in sorted order so subtrees never overlap. Depth sets the row: y = <code>50 + depth·70</code>. No coordinates are stored or manually assigned — the whole layout is recomputed from tree shape every time a node is inserted.</div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<svg id="treeSvg" viewBox="0 0 900 460" style="flex:1;width:100%;"></svg>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Nodes</div><div class="tval" id="tNodes">0</div></div>
+      <div class="tstat"><div class="tlabel">Height</div><div class="tval" id="tHeight">0</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>
+      <div class="tstat" style="flex:1;min-width:220px;"><div class="tlabel">Traversal Sequence</div><div class="tval small" id="tSeq" style="word-break:break-all;">—</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('btnRandomInsert').onclick = () => this.insertValue(randInt(1,999));
+    document.getElementById('btnInsertVal').onclick = () => {
+      const v = +document.getElementById('insertVal').value;
+      if(v) { this.insertValue(v); document.getElementById('insertVal').value=''; }
+    };
+    document.getElementById('btnClearTree').onclick = () => this.clearTree();
+    document.getElementById('traversalAlgo').onchange = () => this.reset();
+
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.root = null; this.nodeCount = 0;
+    [50,30,70,20,40,60,85].forEach(v => this.insertValueSilent(v));
+    this.layoutAndDraw();
+  },
+  makeNode(value){ this.nodeCount++; return { value, left:null, right:null, x:0, y:0, state:'default' }; },
+  insertValueSilent(value){
+    if(!this.root){ this.root = this.makeNode(value); return; }
+    let cur=this.root;
+    while(true){
+      if(value<cur.value){ if(!cur.left){ cur.left=this.makeNode(value); return; } cur=cur.left; }
+      else { if(!cur.right){ cur.right=this.makeNode(value); return; } cur=cur.right; }
+    }
+  },
+  insertValue(value){
+    this.pause();
+    const holder = { current:this.root };
+    const gen = bstInsertGen(holder, value, (v)=>this.makeNode(v));
+    const runner = new Runner(() => gen, (ev)=>{
+      this.layoutAndDraw();
+      this.flashNode(ev.node, ev.type==='insert'?'insert':'visiting');
+    }, () => { this.root = holder.current; this.layoutAndDraw(); });
+    const step = () => { if(runner.step()){ setTimeout(step, mapSpeed(this.speed,420,40)); } else { this.root = holder.current; this.layoutAndDraw(); } };
+    step();
+  },
+  clearTree(){ this.pause(); this.root=null; this.nodeCount=0; this.reset(); this.layoutAndDraw(); },
+  flashNode(node, kind){
+    node.state = kind==='insert' ? 'insert' : 'visiting';
+    this.layoutAndDraw();
+    setTimeout(()=>{ if(node.state!=='visited'){ node.state='default'; this.layoutAndDraw(); } }, mapSpeed(this.speed,380,30));
+  },
+  treeHeight(n){ return n ? 1+Math.max(this.treeHeight(n.left), this.treeHeight(n.right)) : 0; },
+  layoutAndDraw(){
+    let i=0;
+    const W=900;
+    const assignX = (n, depth) => {
+      if(!n) return;
+      assignX(n.left, depth+1);
+      n.x = 60 + i*( (W-120) / Math.max(1,this.nodeCount-1||1) );
+      n.y = 50 + depth*70;
+      i++;
+      assignX(n.right, depth+1);
+    };
+    if(this.root) assignX(this.root, 0);
+    document.getElementById('tNodes').textContent = this.nodeCount;
+    document.getElementById('tHeight').textContent = this.treeHeight(this.root);
+    this.draw();
+  },
+  draw(){
+    const svg = document.getElementById('treeSvg');
+    svg.innerHTML = '';
+    const edgeGroup = svgEl('g',{});
+    const nodeGroup = svgEl('g',{});
+    const drawEdges = (n) => {
+      if(!n) return;
+      if(n.left){ edgeGroup.appendChild(svgEl('line',{x1:n.x,y1:n.y,x2:n.left.x,y2:n.left.y,stroke:'#243447','stroke-width':2})); drawEdges(n.left); }
+      if(n.right){ edgeGroup.appendChild(svgEl('line',{x1:n.x,y1:n.y,x2:n.right.x,y2:n.right.y,stroke:'#243447','stroke-width':2})); drawEdges(n.right); }
+    };
+    const drawNodes = (n) => {
+      if(!n) return;
+      let fill = COLOR.cyan, stroke = COLOR.cyanDim;
+      if(n.state==='visiting'){ fill = COLOR.amber; stroke = COLOR.amberDim; }
+      else if(n.state==='visited'){ fill = COLOR.green; stroke = COLOR.greenDim; }
+      else if(n.state==='insert'){ fill = COLOR.violet; stroke = COLOR.violetDim; }
+      const circle = svgEl('circle',{cx:n.x, cy:n.y, r:19, fill:'#0d131c', stroke:fill, 'stroke-width':2.5});
+      circle.style.transition = 'all .25s ease';
+      const text = svgEl('text',{x:n.x, y:n.y+5, 'text-anchor':'middle', fill:'#dbe7f0', 'font-family':'JetBrains Mono', 'font-size':12});
+      text.textContent = n.value;
+      nodeGroup.appendChild(circle); nodeGroup.appendChild(text);
+      drawNodes(n.left); drawNodes(n.right);
+    };
+    if(this.root){ drawEdges(this.root); drawNodes(this.root); }
+    svg.appendChild(edgeGroup); svg.appendChild(nodeGroup);
+  },
+  handleEvent(ev){
+    this.sequence.push(ev.node.value);
+    document.getElementById('tSeq').textContent = this.sequence.join(' → ');
+    let n=this.root;
+    const mark=(node)=>{ if(!node) return; if(node===ev.node){ node.state='visited'; } else if(node.state==='visited'){} else { node.state='default'; } mark(node.left); mark(node.right); };
+    mark(this.root);
+    this.draw();
+  },
+  run(){
+    if(!this.root){ document.getElementById('tStatus').textContent='Empty Tree'; return; }
+    if(!this.runner){
+      this.runner = new Runner(
+        () => TRAVERSAL_GENS[document.getElementById('traversalAlgo').value](this.root),
+        (ev)=>this.handleEvent(ev),
+        () => { document.getElementById('tStatus').textContent='Complete'; this.clock.pause(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 700, 40));
+  },
+  pause(){ if(this.runner) this.runner.pause(); if(this.clock) this.clock.pause(); document.getElementById('tStatus').textContent='Paused'; },
+  reset(){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    this.sequence = [];
+    document.getElementById('tSeq').textContent = '—';
+    document.getElementById('tStatus').textContent = 'Idle';
+    const clearState=(n)=>{ if(!n) return; n.state='default'; clearState(n.left); clearState(n.right); };
+    clearState(this.root);
+    if(this.clock) this.clock.reset();
+    this.draw();
+  },
+  destroy(){ if(this.runner) this.runner.hardReset(); if(this.clock) this.clock.pause(); }
+};
+
+/* =========================================================
+   MODULE 4 — GRAPHS
+   ========================================================= */
+function* graphBFS(nodes, adj, startId){
+  const visited = new Set([startId]);
+  const queue = [startId];
+  while(queue.length){
+    const id = queue.shift();
+    yield {type:'visit', id};
+    for(const {to} of adj[id]){
+      if(!visited.has(to)){ visited.add(to); yield {type:'edge', from:id, to}; queue.push(to); }
+    }
+  }
+}
+function* graphDFS(nodes, adj, startId){
+  const visited = new Set();
+  function* dfs(id){
+    visited.add(id);
+    yield {type:'visit', id};
+    for(const {to} of adj[id]){
+      if(!visited.has(to)){ yield {type:'edge', from:id, to}; yield* dfs(to); }
+    }
+  }
+  yield* dfs(startId);
+}
+function* graphDijkstra(nodes, adj, startId, targetId){
+  const dist = {}; const prev = {}; nodes.forEach(n => dist[n.id]=Infinity);
+  dist[startId]=0;
+  const unvisited = new Set(nodes.map(n=>n.id));
+  while(unvisited.size){
+    let cur=null, best=Infinity;
+    for(const id of unvisited) if(dist[id]<best){ best=dist[id]; cur=id; }
+    if(cur===null) break;
+    unvisited.delete(cur);
+    yield {type:'visit', id:cur};
+    if(cur===targetId){
+      const path=[]; let c=targetId;
+      while(c!==undefined){ path.unshift(c); c=prev[c]; }
+      yield {type:'path', path};
+      return;
+    }
+    for(const {to,weight} of adj[cur]){
+      if(!unvisited.has(to)) continue;
+      const alt = dist[cur]+weight;
+      if(alt < dist[to]){ dist[to]=alt; prev[to]=cur; yield {type:'edge', from:cur, to}; }
+    }
+  }
+}
+const GRAPH_ALGOS = { bfs:graphBFS, dfs:graphDFS, dijkstra:graphDijkstra };
+const GRAPH_LABELS = { bfs:'Breadth-First Search', dfs:'Depth-First Search', dijkstra:"Dijkstra's Shortest Path" };
+
+const Graphs = {
+  speed:60, nodes:[], adj:{}, runner:null, clock:null, visitedIds:new Set(),
+  selectedNodeId:null, selectedEdge:null,
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'GRAPH.MODULE // NETWORK TOPOLOGY';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Graph Configuration</div>
+      <div class="ctrl-group">
+        <label>Node Count <span class="val" id="nodeCountVal">9</span></label>
+        <input type="range" class="hud-slider" id="nodeCountSlider" min="5" max="14" value="9">
+      </div>
+      <div class="ctrl-group">
+        <label>Algorithm</label>
+        <select class="hud-select" id="graphAlgo">
+          ${Object.entries(GRAPH_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Start Node</label>
+        <select class="hud-select" id="startNode"></select>
+      </div>
+      <div class="ctrl-group" id="targetGroup">
+        <label>Target Node (Dijkstra)</label>
+        <select class="hud-select" id="targetNode"></select>
+      </div>
+      <div class="ctrl-group" id="selPanel" style="display:none;"></div>
+      ${runControlsHTML(this.speed, '⟳ GENERATE GRAPH', 'btnGenGraph')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.cyan}"></span>Node</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.amber}"></span>Visited</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.violet}"></span>Shortest Path</div>
+        </div>
+        <div class="hint">Click a node, then click a second node to add or remove the edge between them. Click an edge's number to edit its cost in the panel above. Editing is always live — no mode switch needed.</div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<svg id="graphSvg" viewBox="0 0 900 460" style="flex:1;width:100%;height:100%;display:block;"></svg>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Nodes / Edges</div><div class="tval small" id="tCounts">—</div></div>
+      <div class="tstat"><div class="tlabel">Visited</div><div class="tval" id="tVisited">0</div></div>
+      <div class="tstat"><div class="tlabel">Path Cost</div><div class="tval" id="tCost">—</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('btnGenGraph').onclick = () => this.generate();
+    document.getElementById('nodeCountSlider').oninput = (e) => { document.getElementById('nodeCountVal').textContent = e.target.value; };
+    document.getElementById('nodeCountSlider').onchange = () => this.generate();
+    document.getElementById('graphAlgo').onchange = () => { this.reset(); this.toggleTarget(); };
+    document.getElementById('startNode').onchange = () => this.reset();
+    document.getElementById('targetNode').onchange = () => this.reset();
+
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.generate();
+    this.toggleTarget();
+    this.resizeHandler = () => this.relayout();
+    window.addEventListener('resize', this.resizeHandler);
+  },
+  toggleTarget(){
+    document.getElementById('targetGroup').style.display = document.getElementById('graphAlgo').value==='dijkstra' ? 'flex' : 'none';
+  },
+  generate(){
+    this.pause();
+    const n = +document.getElementById('nodeCountSlider').value;
+    const vp = document.getElementById('viewport');
+    const W = Math.max(360, Math.round(vp.clientWidth) || 900);
+    const H = Math.max(300, Math.round(vp.clientHeight) || 460);
+    this.W = W; this.H = H;
+    document.getElementById('graphSvg').setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const cx=W/2, cy=H/2, r=Math.max(90, Math.min(W,H)/2 - 65);
+    this.nodes = Array.from({length:n}, (_,i) => ({
+      id:i, label:String.fromCharCode(65+i),
+      x: cx + r*Math.cos(i/n*2*Math.PI - Math.PI/2),
+      y: cy + r*Math.sin(i/n*2*Math.PI - Math.PI/2)
+    }));
+    this.adj = {}; this.nodes.forEach(nd => this.adj[nd.id]=[]);
+    const addEdge = (a,b) => {
+      const w = randInt(1,9);
+      this.adj[a].push({to:b, weight:w}); this.adj[b].push({to:a, weight:w});
+    };
+    // spanning tree first (guarantee connectivity)
+    const order = this.nodes.map(n=>n.id).sort(()=>Math.random()-0.5);
+    for(let i=1;i<order.length;i++){
+      const j = order[randInt(0,i-1)];
+      addEdge(order[i], j);
+    }
+    // extra random edges
+    for(let i=0;i<n;i++){
+      for(let j=i+1;j<n;j++){
+        if(this.adj[i].some(e=>e.to===j)) continue;
+        if(Math.random() < 1.6/n) addEdge(i,j);
+      }
+    }
+    let edgeCount=0; this.nodes.forEach(nd => edgeCount += this.adj[nd.id].length);
+    edgeCount/=2;
+    document.getElementById('tCounts').textContent = `${n} / ${edgeCount}`;
+
+    this.selectedNodeId = null;
+    this.selectedEdge = null;
+    const startSel = document.getElementById('startNode');
+    const targetSel = document.getElementById('targetNode');
+    startSel.innerHTML = this.nodes.map(nd => `<option value="${nd.id}">${nd.label}</option>`).join('');
+    targetSel.innerHTML = this.nodes.map(nd => `<option value="${nd.id}">${nd.label}</option>`).join('');
+    targetSel.value = this.nodes[this.nodes.length-1].id;
+
+    this.reset();
+    this.draw();
+  },
+  draw(){
+    const svg = document.getElementById('graphSvg');
+    svg.innerHTML = '';
+    const edgeGroup = svgEl('g',{});
+    const seen = new Set();
+    this.nodes.forEach(nd => {
+      for(const {to,weight} of this.adj[nd.id]){
+        const key = [nd.id,to].sort().join('-');
+        if(seen.has(key)) continue; seen.add(key);
+        const other = this.nodes[to];
+        const isPathEdge = this.pathEdgeSet && this.pathEdgeSet.has(key);
+        const line = svgEl('line',{x1:nd.x,y1:nd.y,x2:other.x,y2:other.y, stroke:isPathEdge?COLOR.violet:'#243447', 'stroke-width':isPathEdge?4:2});
+        edgeGroup.appendChild(line);
+        const mx=(nd.x+other.x)/2, my=(nd.y+other.y)/2;
+        const isEdgeSelected = this.selectedEdge && ((this.selectedEdge.a===nd.id && this.selectedEdge.b===to) || (this.selectedEdge.a===to && this.selectedEdge.b===nd.id));
+        const labelGroup = svgEl('g',{});
+        const hit = svgEl('circle',{cx:mx,cy:my,r:13,fill:'#0d131c',stroke:isEdgeSelected?COLOR.rose:COLOR.cyanDim,'stroke-width':isEdgeSelected?2.5:1.5});
+        hit.style.cursor = 'pointer';
+        hit.addEventListener('click', (e) => { e.stopPropagation(); this.onEdgeClick(nd.id, to); });
+        labelGroup.appendChild(hit);
+        const wt = svgEl('text',{x:mx,y:my+4,'text-anchor':'middle', fill: isEdgeSelected?COLOR.rose:COLOR.cyan,'font-family':'JetBrains Mono','font-size':12,'pointer-events':'none'});
+        wt.textContent = weight;
+        labelGroup.appendChild(wt);
+        edgeGroup.appendChild(labelGroup);
+      }
+    });
+    svg.appendChild(edgeGroup);
+    const nodeGroup = svgEl('g',{});
+    this.nodes.forEach(nd => {
+      let fill = COLOR.cyan, stroke=COLOR.cyanDim;
+      if(this.pathIdSet && this.pathIdSet.has(nd.id)){ fill=COLOR.violet; stroke=COLOR.violetDim; }
+      else if(this.visitedIds.has(nd.id)){ fill=COLOR.amber; stroke=COLOR.amberDim; }
+      const isSelected = this.selectedNodeId===nd.id;
+      if(isSelected) stroke = COLOR.rose;
+      const c = svgEl('circle',{cx:nd.x,cy:nd.y,r:24,fill:'#0d131c',stroke:fill,'stroke-width':isSelected?5:3});
+      c.style.transition='all .25s ease';
+      c.style.cursor='pointer';
+      c.addEventListener('click', () => this.onNodeClick(nd.id));
+      const t = svgEl('text',{x:nd.x,y:nd.y+6,'text-anchor':'middle',fill:'#dbe7f0','font-family':'JetBrains Mono','font-size':15});
+      t.textContent = nd.label;
+      nodeGroup.appendChild(c); nodeGroup.appendChild(t);
+    });
+    svg.appendChild(nodeGroup);
+  },
+  onNodeClick(id){
+    this.pause();
+    this.selectedEdge = null;
+    if(this.selectedNodeId===null){ this.selectedNodeId = id; this.draw(); this.renderSelPanel(); return; }
+    if(this.selectedNodeId===id){ this.selectedNodeId = null; this.draw(); this.renderSelPanel(); return; }
+    this.toggleEdge(this.selectedNodeId, id);
+    this.selectedNodeId = null;
+  },
+  toggleEdge(a,b){
+    const existing = this.adj[a].find(e=>e.to===b);
+    if(existing){
+      this.adj[a] = this.adj[a].filter(e=>e.to!==b);
+      this.adj[b] = this.adj[b].filter(e=>e.to!==a);
+    } else {
+      const w = randInt(1,9);
+      this.adj[a].push({to:b, weight:w});
+      this.adj[b].push({to:a, weight:w});
+    }
+    this.updateEdgeCount();
+    this.reset();
+  },
+  onEdgeClick(a,b){
+    this.pause();
+    this.selectedNodeId = null;
+    this.selectedEdge = {a,b};
+    this.draw();
+    this.renderSelPanel();
+  },
+  renderSelPanel(){
+    const panel = document.getElementById('selPanel');
+    if(!panel) return;
+    if(this.selectedNodeId!==null){
+      const nd = this.nodes[this.selectedNodeId];
+      panel.style.display = 'block';
+      panel.innerHTML = `
+        <label>Selected Node: ${nd.label}</label>
+        <input type="text" class="hud-input" id="nodeLabelInput" maxlength="3" value="${nd.label}" style="text-transform:uppercase;">
+        <div class="hint" style="margin-top:6px;">Rename above, or click another node to add/remove the edge between them.</div>`;
+      const input = document.getElementById('nodeLabelInput');
+      input.oninput = () => {
+        nd.label = (input.value.trim().toUpperCase() || nd.label);
+        this.draw();
+      };
+    } else if(this.selectedEdge){
+      const {a,b} = this.selectedEdge;
+      const edge = this.adj[a] && this.adj[a].find(e=>e.to===b);
+      if(!edge){ panel.style.display='none'; panel.innerHTML=''; return; }
+      panel.style.display = 'block';
+      panel.innerHTML = `
+        <label>Edge ${this.nodes[a].label}\u2013${this.nodes[b].label} Cost</label>
+        <input type="number" class="hud-input" id="edgeWeightInput" min="1" max="99" value="${edge.weight}">
+        <div class="hint" style="margin-top:6px;">Change the number, then press Enter or tap away to apply.</div>`;
+      const input = document.getElementById('edgeWeightInput');
+      const apply = () => {
+        const w = Math.max(1, Math.min(99, parseInt(input.value,10) || edge.weight));
+        edge.weight = w;
+        const rev = this.adj[b].find(e=>e.to===a);
+        if(rev) rev.weight = w;
+        this.reset();
+      };
+      input.onchange = apply;
+      input.addEventListener('keydown', (e) => { if(e.key==='Enter'){ apply(); input.blur(); } });
+    } else {
+      panel.style.display = 'none';
+      panel.innerHTML = '';
+    }
+  },
+  updateEdgeCount(){
+    let edgeCount=0; this.nodes.forEach(nd => edgeCount += this.adj[nd.id].length);
+    edgeCount/=2;
+    document.getElementById('tCounts').textContent = `${this.nodes.length} / ${edgeCount}`;
+  },
+  handleEvent(ev){
+    if(ev.type==='visit'){ this.visitedIds.add(ev.id); document.getElementById('tVisited').textContent = this.visitedIds.size; }
+    else if(ev.type==='edge'){ /* traversal edge, cosmetic only via node state */ }
+    else if(ev.type==='path'){
+      this.pathIdSet = new Set(ev.path);
+      this.pathEdgeSet = new Set();
+      for(let i=0;i<ev.path.length-1;i++) this.pathEdgeSet.add([ev.path[i],ev.path[i+1]].sort().join('-'));
+      let cost=0;
+      for(let i=0;i<ev.path.length-1;i++){ const e=this.adj[ev.path[i]].find(x=>x.to===ev.path[i+1]); cost+=e.weight; }
+      document.getElementById('tCost').textContent = cost;
+      document.getElementById('tStatus').textContent = 'Path Found';
+      this.clock.pause();
+    }
+    this.draw();
+  },
+  run(){
+    if(!this.runner){
+      const algo = document.getElementById('graphAlgo').value;
+      const startId = +document.getElementById('startNode').value;
+      const targetId = +document.getElementById('targetNode').value;
+      this.runner = new Runner(
+        () => GRAPH_ALGOS[algo](this.nodes, this.adj, startId, targetId),
+        (ev)=>this.handleEvent(ev),
+        () => { if(document.getElementById('tStatus').textContent==='Running') document.getElementById('tStatus').textContent='Complete'; this.clock.pause(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 650, 40));
+  },
+  pause(){ if(this.runner) this.runner.pause(); if(this.clock) this.clock.pause(); document.getElementById('tStatus').textContent='Paused'; },
+  reset(){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    this.visitedIds = new Set();
+    this.pathIdSet = null; this.pathEdgeSet = null;
+    document.getElementById('tVisited').textContent = 0;
+    document.getElementById('tCost').textContent = '—';
+    document.getElementById('tStatus').textContent = 'Idle';
+    if(this.clock) this.clock.reset();
+    this.draw();
+    this.renderSelPanel();
+  },
+  relayout(){
+    const vp = document.getElementById('viewport');
+    if(!vp || !this.nodes.length) return;
+    const W = Math.max(360, Math.round(vp.clientWidth) || 900);
+    const H = Math.max(300, Math.round(vp.clientHeight) || 460);
+    if(W===this.W && H===this.H) return;
+    this.W = W; this.H = H;
+    document.getElementById('graphSvg').setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const cx=W/2, cy=H/2, r=Math.max(90, Math.min(W,H)/2 - 65);
+    const n = this.nodes.length;
+    this.nodes.forEach((nd,i) => {
+      nd.x = cx + r*Math.cos(i/n*2*Math.PI - Math.PI/2);
+      nd.y = cy + r*Math.sin(i/n*2*Math.PI - Math.PI/2);
+    });
+    this.draw();
+  },
+  destroy(){ if(this.runner) this.runner.hardReset(); if(this.clock) this.clock.pause(); if(this.resizeHandler) window.removeEventListener('resize', this.resizeHandler); }
+};
+
+/* =========================================================
+   MODULE 5 — COMPRESSION (Huffman Coding)
+   ========================================================= */
+function* huffmanBuild(freqMap){
+  let nodes = Object.entries(freqMap).map(([ch,freq]) => ({ ch, freq, left:null, right:null, id:'leaf-'+ch }));
+  nodes.sort((a,b)=>a.freq-b.freq);
+  let idCounter=0;
+  yield {type:'init', nodes:[...nodes]};
+  while(nodes.length > 1){
+    nodes.sort((a,b)=>a.freq-b.freq);
+    const a = nodes.shift(), b = nodes.shift();
+    const parent = { ch:null, freq:a.freq+b.freq, left:a, right:b, id:'internal-'+(idCounter++) };
+    yield {type:'merge', a, b, parent};
+    nodes.push(parent);
+  }
+  const root = nodes[0];
+  const codes = {};
+  (function assign(n, code){
+    if(!n) return;
+    if(!n.left && !n.right){ codes[n.ch] = code || '0'; return; }
+    assign(n.left, code+'0');
+    assign(n.right, code+'1');
+  })(root, '');
+  yield {type:'codes', codes, root};
+}
+
+const Compress = {
+  speed:55, runner:null, clock:null, text:'', nodePos:{}, edges:[], mergedCount:0,
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'COMPRESS.MODULE // HUFFMAN CODING';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Compression Configuration</div>
+      <div class="ctrl-group">
+        <label>Input Text</label>
+        <input type="text" class="hud-input" id="compText" maxlength="28" value="ALGORITHMS ARE FUN">
+      </div>
+      ${runControlsHTML(this.speed, '⚙ BUILD TREE', 'btnBuildHuff')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.cyan}"></span>Leaf (character)</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.amber}"></span>Merging</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.violet}"></span>Internal node</div>
+        </div>
+        <div class="hint">Builds a Huffman tree bottom-up by repeatedly merging the two lowest-frequency nodes.</div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<svg id="huffSvg" viewBox="0 0 900 460" style="flex:1;width:100%;"></svg>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Original Size</div><div class="tval" id="tOrig">—</div></div>
+      <div class="tstat"><div class="tlabel">Compressed Size</div><div class="tval" id="tComp">—</div></div>
+      <div class="tstat"><div class="tlabel">Ratio</div><div class="tval" id="tRatio">—</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>
+      <div class="tstat" style="flex:1;min-width:220px;"><div class="tlabel">Code Table</div><div class="tval small" id="tCodes" style="word-break:break-all;">—</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('btnBuildHuff').onclick = () => this.reset(true);
+    document.getElementById('compText').oninput = () => this.reset(true);
+
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.reset(true);
+  },
+  freqMap(){
+    const text = document.getElementById('compText').value || 'HUFFMAN';
+    const map = {};
+    for(const ch of text) map[ch] = (map[ch]||0)+1;
+    return { text, map };
+  },
+  layout(nodes){
+    this.nodePos = {};
+    nodes.forEach((n,i) => { this.nodePos[n.id] = { x: 60 + i*((840)/Math.max(1,nodes.length-1||1)), y: 400 }; });
+  },
+  draw(currentEdges, highlight){
+    const svg = document.getElementById('huffSvg');
+    svg.innerHTML = '';
+    const eg = svgEl('g',{});
+    currentEdges.forEach(([p,c]) => {
+      const pp = this.nodePos[p.id], cp = this.nodePos[c.id];
+      if(!pp || !cp) return;
+      eg.appendChild(svgEl('line',{x1:pp.x,y1:pp.y,x2:cp.x,y2:cp.y,stroke:'#243447','stroke-width':2}));
+    });
+    svg.appendChild(eg);
+    const ng = svgEl('g',{});
+    for(const id in this.nodePos){
+      const pos = this.nodePos[id];
+      const isLeaf = id.startsWith('leaf-');
+      let fill = isLeaf ? COLOR.cyan : COLOR.violet;
+      let stroke = isLeaf ? COLOR.cyanDim : COLOR.violetDim;
+      if(highlight && highlight.has(id)){ fill = COLOR.amber; stroke = COLOR.amberDim; }
+      const c = svgEl('circle',{cx:pos.x,cy:pos.y,r:isLeaf?18:15,fill:'#0d131c',stroke:fill,'stroke-width':2.5});
+      c.style.transition = 'all .3s ease';
+      ng.appendChild(c);
+      if(isLeaf){
+        const ch = id.slice(5);
+        const t = svgEl('text',{x:pos.x,y:pos.y+5,'text-anchor':'middle',fill:'#dbe7f0','font-family':'JetBrains Mono','font-size':11});
+        t.textContent = ch===' '?'␣':ch;
+        ng.appendChild(t);
+      }
+      const ft = svgEl('text',{x:pos.x,y:pos.y+30,'text-anchor':'middle',fill:'#41556a','font-family':'JetBrains Mono','font-size':9});
+      ft.textContent = this.freqLookup ? (this.freqLookup[id]||'') : '';
+      ng.appendChild(ft);
+    }
+    svg.appendChild(ng);
+  },
+  run(){
+    if(!this.runner){
+      const {text, map} = this.freqMap();
+      this.text = text;
+      this.builtEdges = [];
+      this.freqLookup = {};
+      this.runner = new Runner(
+        () => huffmanBuild(map),
+        (ev) => this.handleEvent(ev),
+        () => { document.getElementById('tStatus').textContent = 'Complete'; this.clock.pause(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 900, 60));
+  },
+  handleEvent(ev){
+    if(ev.type==='init'){
+      this.layout(ev.nodes);
+      ev.nodes.forEach(n => this.freqLookup[n.id]=n.freq);
+      this.draw([], null);
+    } else if(ev.type==='merge'){
+      const px = (this.nodePos[ev.a.id].x + this.nodePos[ev.b.id].x)/2;
+      const py = Math.min(this.nodePos[ev.a.id].y, this.nodePos[ev.b.id].y) - 70;
+      this.nodePos[ev.parent.id] = { x:px, y:Math.max(50,py) };
+      this.freqLookup[ev.parent.id] = ev.parent.freq;
+      this.builtEdges.push([ev.parent, ev.a], [ev.parent, ev.b]);
+      this.draw(this.builtEdges, new Set([ev.a.id, ev.b.id]));
+      setTimeout(()=>this.draw(this.builtEdges, null), mapSpeed(this.speed,900,60)*0.6);
+    } else if(ev.type==='codes'){
+      const rows = Object.entries(ev.codes).sort((a,b)=>a[1].length-b[1].length)
+        .map(([ch,code]) => `${ch===' '?'␣':ch}:${code}`).join('  ');
+      document.getElementById('tCodes').textContent = rows;
+      const originalBits = this.text.length * 8;
+      let compressedBits = 0;
+      for(const ch of this.text) compressedBits += ev.codes[ch].length;
+      document.getElementById('tOrig').textContent = originalBits + ' bits';
+      document.getElementById('tComp').textContent = compressedBits + ' bits';
+      document.getElementById('tRatio').textContent = Math.round((1 - compressedBits/originalBits)*100) + '% smaller';
+    }
+  },
+  pause(){ if(this.runner) this.runner.pause(); if(this.clock) this.clock.pause(); document.getElementById('tStatus').textContent='Paused'; },
+  reset(rebuildLayout){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    document.getElementById('tOrig').textContent = '—';
+    document.getElementById('tComp').textContent = '—';
+    document.getElementById('tRatio').textContent = '—';
+    document.getElementById('tCodes').textContent = '—';
+    document.getElementById('tStatus').textContent = 'Idle';
+    if(this.clock) this.clock.reset();
+    if(rebuildLayout){
+      const {text, map} = this.freqMap();
+      this.text = text;
+      const leaves = Object.entries(map).map(([ch,freq]) => ({ch,freq,id:'leaf-'+ch})).sort((a,b)=>a.freq-b.freq);
+      this.freqLookup = {};
+      leaves.forEach(n => this.freqLookup[n.id]=n.freq);
+      this.layout(leaves);
+      this.builtEdges = [];
+      this.draw([], null);
+    }
+  },
+  destroy(){ if(this.runner) this.runner.hardReset(); if(this.clock) this.clock.pause(); }
+};
+
+/* =========================================================
+   MODULE 6 — CRYPTOGRAPHY (Caesar / XOR cipher)
+   ========================================================= */
+function* caesarGen(text, shift){
+  let out = '';
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    let enc = ch;
+    if(/[a-z]/i.test(ch)){
+      const base = ch === ch.toUpperCase() ? 65 : 97;
+      enc = String.fromCharCode((ch.charCodeAt(0)-base+shift+260)%26+base);
+    }
+    out += enc;
+    yield {type:'char', index:i, orig:ch, enc, deg:(shift%26)*(360/26)};
+  }
+  yield {type:'done', result:out};
+}
+function* xorGen(text, key){
+  let out = '';
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    const k = key.charCodeAt(i % key.length);
+    const origCode = ch.charCodeAt(0);
+    const encCode = origCode ^ k;
+    out += String.fromCharCode(encCode);
+    yield {type:'char', index:i, orig:ch, enc:String.fromCharCode(encCode), origCode, encCode, k};
+  }
+  yield {type:'done', result:out};
+}
+const CRYPTO_LABELS = { caesar:'Caesar Cipher (shift)', xor:'XOR Stream Cipher' };
+
+const Crypto = {
+  speed:70, runner:null, clock:null, processed:0,
+
+  init(){
+    document.getElementById('viewportLabel').textContent = 'CRYPTO.MODULE // CIPHER TRANSFORM';
+    document.getElementById('sidebar').innerHTML = `
+      <div class="sidebar-title">Cipher Configuration</div>
+      <div class="ctrl-group">
+        <label>Cipher</label>
+        <select class="hud-select" id="cryptoAlgo">
+          ${Object.entries(CRYPTO_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Plaintext</label>
+        <input type="text" class="hud-input" id="cryptoText" maxlength="24" value="HELLO WORLD">
+      </div>
+      <div class="ctrl-group" id="caesarKeyGroup">
+        <label>Shift <span class="val" id="shiftVal">3</span></label>
+        <input type="range" class="hud-slider" id="shiftSlider" min="1" max="25" value="3">
+      </div>
+      <div class="ctrl-group" id="xorKeyGroup" style="display:none;">
+        <label>Key</label>
+        <input type="text" class="hud-input" id="xorKey" maxlength="8" value="KEY">
+      </div>
+      ${runControlsHTML(this.speed, '✕ CLEAR OUTPUT', 'btnClearCrypto')}
+      <div class="ctrl-group">
+        <label>Legend</label>
+        <div class="legend">
+          <div class="litem"><span class="sw" style="background:${COLOR.cyan}"></span>Plaintext char</div>
+          <div class="litem"><span class="sw" style="background:${COLOR.rose}"></span>Ciphertext char</div>
+        </div>
+      </div>`;
+    document.getElementById('viewport').innerHTML = `<div id="cryptoOut" style="flex:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:8px;"></div>`;
+    document.getElementById('telemetry').innerHTML = `
+      <div class="tstat"><div class="tlabel">Chars Processed</div><div class="tval" id="tChars">0</div></div>
+      <div class="tstat"><div class="tlabel">Elapsed</div><div class="tval" id="tTime">0.0s</div></div>
+      <div class="tstat"><div class="tlabel">Status</div><div class="tval small" id="tStatus">Idle</div></div>
+      <div class="tstat" style="flex:1;min-width:220px;"><div class="tlabel">Ciphertext</div><div class="tval small" id="tCipher" style="word-break:break-all;">—</div></div>`;
+
+    bindRunControls(this);
+    document.getElementById('cryptoAlgo').onchange = () => { this.toggleKeyInputs(); this.reset(); };
+    document.getElementById('cryptoText').oninput = () => this.reset();
+    document.getElementById('shiftSlider').oninput = (e) => { document.getElementById('shiftVal').textContent = e.target.value; };
+    document.getElementById('shiftSlider').onchange = () => this.reset();
+    document.getElementById('xorKey').oninput = () => this.reset();
+    document.getElementById('btnClearCrypto').onclick = () => this.reset();
+
+    this.clock = makeClock(ms => { document.getElementById('tTime').textContent = fmtMs(ms); });
+    this.toggleKeyInputs();
+    this.reset();
+  },
+  toggleKeyInputs(){
+    const isCaesar = document.getElementById('cryptoAlgo').value === 'caesar';
+    document.getElementById('caesarKeyGroup').style.display = isCaesar ? 'flex' : 'none';
+    document.getElementById('xorKeyGroup').style.display = isCaesar ? 'none' : 'flex';
+  },
+  handleEvent(ev){
+    if(ev.type==='char'){
+      this.processed++;
+      document.getElementById('tChars').textContent = this.processed;
+      const out = document.getElementById('cryptoOut');
+      const cell = el('div','crypto-cell');
+      cell.style.cssText = 'background:#111925;border:1px solid #1c2b3a;padding:8px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:52px;opacity:0;transform:translateY(6px);transition:opacity .3s ease, transform .3s ease;';
+      const showCh = c => c===' ' ? '␣' : c;
+      cell.innerHTML = `
+        <div style="font-family:var(--font-mono);font-size:15px;color:${COLOR.cyan};">${showCh(ev.orig)}</div>
+        <div style="font-size:10px;color:#41556a;">↓</div>
+        <div style="font-family:var(--font-mono);font-size:15px;color:${COLOR.rose};">${showCh(ev.enc)}</div>`;
+      out.appendChild(cell);
+      requestAnimationFrame(()=>{ cell.style.opacity=1; cell.style.transform='translateY(0)'; });
+    } else if(ev.type==='done'){
+      document.getElementById('tCipher').textContent = ev.result;
+      document.getElementById('tStatus').textContent = 'Complete';
+      this.clock.pause();
+    }
+  },
+  run(){
+    if(!this.runner){
+      const algo = document.getElementById('cryptoAlgo').value;
+      const text = document.getElementById('cryptoText').value || 'HELLO';
+      this.runner = new Runner(
+        () => algo==='caesar'
+          ? caesarGen(text, +document.getElementById('shiftSlider').value)
+          : xorGen(text, document.getElementById('xorKey').value || 'KEY'),
+        (ev)=>this.handleEvent(ev),
+        () => { if(document.getElementById('tStatus').textContent==='Running') document.getElementById('tStatus').textContent='Complete'; this.clock.pause(); }
+      );
+    }
+    document.getElementById('tStatus').textContent = 'Running';
+    this.clock.start();
+    this.runner.play(() => mapSpeed(this.speed, 500, 40));
+  },
+  pause(){ if(this.runner) this.runner.pause(); if(this.clock) this.clock.pause(); document.getElementById('tStatus').textContent='Paused'; },
+  reset(){
+    if(this.runner) this.runner.hardReset();
+    this.runner = null;
+    this.processed = 0;
+    document.getElementById('cryptoOut').innerHTML = '';
+    document.getElementById('tChars').textContent = 0;
+    document.getElementById('tCipher').textContent = '—';
+    document.getElementById('tStatus').textContent = 'Idle';
+    if(this.clock) this.clock.reset();
+  },
+  destroy(){ if(this.runner) this.runner.hardReset(); if(this.clock) this.clock.pause(); }
+};
+
+/* =========================================================
+   MAIN — tab switching
+   ========================================================= */
+const MODULES = { sort:Sort, path:Pathfind, tree:Trees, graph:Graphs, zip:Compress, crypto:Crypto };
+let activeModId = null;
+
+function switchModule(id){
+  if(activeModId && MODULES[activeModId].destroy) MODULES[activeModId].destroy();
+  activeModId = id;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.mod===id));
+  MODULES[id].init();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchModule(btn.dataset.mod));
+});
+
+switchModule('sort');
+
+</script>
+</body>
+</html>
